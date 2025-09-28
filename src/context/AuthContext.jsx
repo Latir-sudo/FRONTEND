@@ -13,9 +13,11 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = (payload) => {
+    // payload = { email, role }
     localStorage.setItem('cc_auth_user', JSON.stringify(payload))
     setUser(payload)
   }
+
   const logout = () => {
     localStorage.removeItem('cc_auth_user')
     setUser(null)
@@ -27,4 +29,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
+
 export const useAuth = () => useContext(AuthContext)

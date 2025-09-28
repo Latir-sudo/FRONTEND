@@ -13,6 +13,15 @@ import PatientReminders from './pages/patient/Reminders'
 import DoctorProfile from './pages/DoctorProfile'
 import RequireAuth from './components/RequireAuth'
 
+
+// importation pour admin
+
+import AdminLayout from './layouts/AdminLayout'
+import Dashboard  from './pages/adm/Dashboard'
+import GestionUsers  from './pages/adm/GestionUsers'
+import Affichage from './pages/adm/Affichage'
+import PaymentsDashboard from './pages/adm/PaymentsDashboard'
+
 export default function App() {
   return (
     <Routes>
@@ -39,7 +48,41 @@ export default function App() {
         <Route path="rappels" element={<PatientReminders />} />
       </Route>
 
+
+
+       {/* Espace admin */}
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth role="admin">
+            <AdminLayout />
+          </RequireAuth>
+        }
+      >
+
+         <Route index element={<Dashboard />} />
+         <Route path="users" element={
+          <>
+              <Affichage />
+              <GestionUsers />
+             
+          </>
+         }
+         />
+
+         <Route path = "paiements" element = {<PaymentsDashboard />} />
+         
+         
+       
+
+        
+       
+       
+      </Route>
+
       <Route path="*" element={<Home />} />
+
     </Routes>
+   
   )
 }
