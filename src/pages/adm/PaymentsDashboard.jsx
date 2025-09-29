@@ -38,6 +38,23 @@ const PaymentsDashboard = () => {
         proof: 'receipt_om_45871.pdf'
       },
       {
+        id: 'TX-2024-48871',
+        patient: {
+          name: 'Astou Diouf',
+          phone: '+221 77 231 22 11',
+          avatar: 'AD'
+        },
+        doctor: {
+          name: 'Dr. Francois Diouf',
+          specialty: 'generaliste'
+        },
+        amount: 11000,
+        paymentMethod: 'wave',
+        date: '20/11/2024 14:30',
+        status: 'pending',
+        proof: 'receipt_om_45861.pdf'
+      },
+      {
         id: 'TX-2024-45872',
         patient: {
           name: 'Jean Traoré',

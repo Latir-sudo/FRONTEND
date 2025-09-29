@@ -68,7 +68,7 @@ const PaymentStats = ({ stats }) => {
                 stat.trend.direction === 'up' ? 'text-green-600' : 'text-red-600'
               }`}>
                 <i className={`fas fa-arrow-${stat.trend.direction}`}></i>
-                <span>{stat.trend.value} vs hier</span>
+                <span>{stat.trend.value} vs hier</span> 
               </div>
             </div>
             <div className={`text-3xl ${getIconColor(stat.color)}`}>

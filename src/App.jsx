@@ -21,6 +21,9 @@ import Dashboard  from './pages/adm/Dashboard'
 import GestionUsers  from './pages/adm/GestionUsers'
 import Affichage from './pages/adm/Affichage'
 import PaymentsDashboard from './pages/adm/PaymentsDashboard'
+import SuccessfulConsultationsChart from './components/SuccessfulConsultationsChart'
+import CreateUser from './pages/adm/CreateUser'
+import EditUser  from './pages/adm/EditUser'
 
 export default function App() {
   return (
@@ -51,16 +54,21 @@ export default function App() {
 
 
        {/* Espace admin */}
+     
       <Route
         path="/admin"
         element={
-          <RequireAuth role="admin">
+         
             <AdminLayout />
-          </RequireAuth>
+          
         }
       >
 
-         <Route index element={<Dashboard />} />
+         <Route index element={
+          <>
+          <Dashboard />
+          <SuccessfulConsultationsChart />
+          </>} />
          <Route path="users" element={
           <>
               <Affichage />
@@ -72,7 +80,8 @@ export default function App() {
 
          <Route path = "paiements" element = {<PaymentsDashboard />} />
          
-         
+         <Route path = "users/create" element = {<CreateUser />} />
+         <Route path="users/edit/:id" element={<EditUser />} />
        
 
         

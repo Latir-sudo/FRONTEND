@@ -6,15 +6,15 @@ export default function Dashboard () {
         <div className=" h-auto w-full ">
             <div className="flex  px-5 py-10 h-20 items-center justify-between bg-white text-stone-600 border rounded-xl shadow-md">
                <div className="py-4">
-                <h2 className="text-blue-500 text-2xl font-bold">Tableau de bord national - Teleconsultation</h2>
+                <h2 className="text-green-500 text-2xl font-bold">Tableau de bord  - Teleconsultation</h2>
                 <p>Supervision du projet eSanté - Données en temps réel</p>
                </div>
 
                <div className="flex items-center gap-2">
                      <div className="rounded-full bg-blue-600 size-9 text-white font-bold flex items-center justify-center">AD</div>
                      <div>
-                         <p className="text-lg">Admin National</p>
-                         <span className="text-sm">Projet eSanté</span>
+                         <p className="text-lg">Admin</p>
+                         
                      </div>
                 
                </div>
@@ -36,7 +36,7 @@ export default function Dashboard () {
                    icon={<FaUserMd />}
                    value="916"
                    label="Medecins actifs"
-                   color="text-green-400"
+                   color="text-blue-400"
                    change="+8 % de ce moi"
 
                 />
@@ -45,7 +45,7 @@ export default function Dashboard () {
                    icon={<FaVideo />}
                    value="3316"
                    label="Consultations/mois"
-                   color="text-orange-300"
+                   color="text-blue-300"
                    change="+15 % de ce moi"
 
                 />
@@ -54,7 +54,7 @@ export default function Dashboard () {
                    icon={<FaMoneyBillWave />}
                    value="399"
                    label="chiffres d'affaires"
-                   color="text-purple-400"
+                   color="text-blue-400"
                    change="+22 % de ce moi"
 
                 />

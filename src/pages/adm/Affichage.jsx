@@ -8,14 +8,14 @@ export default function Affichage() {
         <div className="bg-white rounded-xl shadow p-6 flex-1 min-w-[350px]">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="font-semibold text-lg">Alertes système</h2>
-                <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="bg-blue-300 text-white px-3 py-1 rounded-full text-sm font-medium">
                     3 nouvelles
                 </span>
             </div>
             {/* Alerte Urgent */}
           <div className="mb-4">
             <div className="flex items-center gap-2">
-              <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded font-semibold text-xs">
+              <span className="bg-blue-300 text-white px-2 py-1 rounded font-semibold text-xs">
                 Urgent
               </span>
               <span className="text-gray-400 text-xs">Il y a 5 min</span>

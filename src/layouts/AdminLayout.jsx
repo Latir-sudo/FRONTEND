@@ -12,7 +12,7 @@ export default function AdminLayout ()  {
             {/* sidebar fixé à gauche*/}
             <Sidebar />
             {/* Zone principal*/}
-            <main className="flex-1 ml-[400px] overflow-y-auto p-6">
+            <main className="flex-1 ml-[260px] overflow-y-auto p-6">
                 {/* ici s'affichent les pages enfants*/}
              
                 <Outlet />
