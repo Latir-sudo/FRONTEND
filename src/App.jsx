@@ -13,6 +13,7 @@ import PatientReminders from './pages/patient/Reminders'
 import DoctorProfile from './pages/DoctorProfile'
 import RequireAuth from './components/RequireAuth'
 import ProtectedRoute from './context/ProtectedRoute'
+import Quality from './pages/adm/Quality'
 
 
 // importation pour admin
@@ -83,7 +84,7 @@ export default function App() {
          <Route path = "users/create" element = {<CreateUser />} />
          <Route path="users/edit/:id" element={<EditUser />} />
        
-
+          <Route path ="qualite" element ={<Quality />} />
         
        
        

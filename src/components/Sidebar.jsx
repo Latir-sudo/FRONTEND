@@ -9,7 +9,6 @@ export default function Sidebar({ active, setActive }) {
     { id: "users", label: "Gestion des utilisateurs", icon: <FaUsers />, path: "/admin/users" },
     { id: "payments", label: "Supervision des paiements", icon: <FaCreditCard />, path: "/admin/paiements" },
     { id: "quality", label: "Qualité de service", icon: <FaChartLine />, path: "/admin/qualite" },
-    { id: "doctors", label: "Gestion médecins", icon: <FaUserMd />, path: "/admin/medecins" },
     { id: "reports", label: "Rapports nationaux", icon: <FaFileAlt />, path: "/admin/rapports" },
   ];
 

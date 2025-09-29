@@ -2,22 +2,20 @@ import { useState, useEffect } from "react";
 import { FaEdit, FaPlus, FaTrash, FaEllipsisV } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-
 export default function GestionUsers() {
     const [search, setSearch] = useState("");
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [actionMenu, setActionMenu] = useState(null); // { userId, x, y }
+    const [actionMenu, setActionMenu] = useState(null);
     const navigate = useNavigate();
 
-    // Récupérer les utilisateurs depuis l'API
     const fetchUsers = async () => {
         try {
             setLoading(true);
             setError("");
             
-            const API_URL ='http://localhost:3001';
+            const API_URL = 'http://localhost:3001';
             const token = localStorage.getItem('token');
             
             if (!token) {
@@ -44,6 +42,13 @@ export default function GestionUsers() {
         } catch (err) {
             setError(err.message);
             console.error('Erreur API:', err);
+            
+            // Redirection si non autorisé
+            if (err.message.includes('401') || err.message.includes('403')) {
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000);
+            }
         } finally {
             setLoading(false);
         }
@@ -53,7 +58,6 @@ export default function GestionUsers() {
         fetchUsers();
     }, []);
 
-    // Formater les données selon votre schéma de base de données
     const formatUserData = (apiUsers) => {
         return apiUsers.map(user => ({
             id: user.idu,
@@ -63,17 +67,15 @@ export default function GestionUsers() {
             typeLabel: getTypeLabel(user.typecompte),
             region: user.adresse || 'Non spécifié',
             date: new Date(user.dateajout).toLocaleDateString('fr-FR'),
-            status: user.etat,
+            status: user.etat || 'Non spécifié',
             telephone: user.telephoneu,
             sexe: user.sexe,
             fonction: user.fonction,
             specialty: user.medecin?.specialite || null,
-            // Données brutes pour édition
             rawData: user
         }));
     };
 
-    // Traduire les types de compte
     const getTypeLabel = (typecompte) => {
         const types = {
             'ROLE_ADMIN': 'Administrateur',
@@ -86,23 +88,26 @@ export default function GestionUsers() {
 
     const formattedUsers = formatUserData(users);
 
-    const filteredUsers = formattedUsers.filter(
-        (u) =>
-            u.name.toLowerCase().includes(search.toLowerCase()) ||
-            u.email.toLowerCase().includes(search.toLowerCase()) ||
-            u.region.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredUsers = formattedUsers.filter((u) => {
+        const searchTerm = search.toLowerCase();
+        return (
+            u.name.toLowerCase().includes(searchTerm) ||
+            u.email.toLowerCase().includes(searchTerm) ||
+            (u.region && u.region.toLowerCase().includes(searchTerm))
+        );
+    });
 
-    // Fonction pour déterminer la classe CSS selon le statut
     const getStatusClass = (status) => {
-        if (status?.toLowerCase() === "actif") {
+        const statusLower = status?.toLowerCase();
+        if (statusLower === "actif") {
             return "bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs";
-        } else {
+        } else if (statusLower === "inactif") {
             return "bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs";
+        } else {
+            return "bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs";
         }
     };
 
-    // Ouvrir le menu d'actions
     const handleActionClick = (userId, event) => {
         event.stopPropagation();
         setActionMenu({
@@ -112,12 +117,10 @@ export default function GestionUsers() {
         });
     };
 
-    // Fermer le menu d'actions
     const closeActionMenu = () => {
         setActionMenu(null);
     };
 
-    // Supprimer un utilisateur
     const handleDelete = async (userId) => {
         closeActionMenu();
         
@@ -126,21 +129,22 @@ export default function GestionUsers() {
         }
 
         try {
-            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+            const API_URL = 'http://localhost:3001';
             const token = localStorage.getItem('token');
 
             const response = await fetch(`${API_URL}/api/utilisateurs/${userId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Erreur lors de la suppression');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Erreur ${response.status}`);
             }
 
-            // Rafraîchir la liste
             fetchUsers();
             alert('Utilisateur supprimé avec succès !');
             
@@ -150,18 +154,15 @@ export default function GestionUsers() {
         }
     };
 
-    // Modifier un utilisateur
     const handleEdit = (userId) => {
         closeActionMenu();
         navigate(`/admin/users/edit/${userId}`);
     };
 
-    // Navigation vers la page de création
     const handleNewUser = () => {
         navigate('/admin/users/create');
     };
 
-    // Fermer le menu si on clique ailleurs
     useEffect(() => {
         const handleClickOutside = () => {
             setActionMenu(null);
@@ -173,6 +174,7 @@ export default function GestionUsers() {
         };
     }, []);
 
+    // [Le reste du code JSX reste identique]
     if (loading) {
         return (
             <div className="bg-white rounded-xl p-6 shadow-md">
@@ -261,7 +263,6 @@ export default function GestionUsers() {
                                     <FaEllipsisV />
                                 </button>
 
-                                {/* Menu d'actions */}
                                 {actionMenu?.userId === user.id && (
                                     <div 
                                         className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10"

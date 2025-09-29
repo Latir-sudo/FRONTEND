@@ -49,7 +49,7 @@ export default function Register() {
     }
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
+      const API_URL =  'http://localhost:3001'
 
       // Déterminer l'endpoint en fonction du rôle
       const isPatient = true // Pour l'instant, on permet seulement l'inscription patient

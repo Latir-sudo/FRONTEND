@@ -8,9 +8,9 @@ export default function EditUser() {
     const [loading, setLoading] = useState(false);
     const [fetchLoading, setFetchLoading] = useState(true);
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState(false);
     
     const [formData, setFormData] = useState({
-        // Champs de base
         prenomu: '',
         nomu: '',
         emailu: '',
@@ -22,8 +22,6 @@ export default function EditUser() {
         password: '',
         confirmPassword: '',
         etat: 'actif',
-        
-        // Champs spécifiques médecin
         specialite: ''
     });
 
@@ -32,18 +30,28 @@ export default function EditUser() {
         const fetchUser = async () => {
             try {
                 setFetchLoading(true);
+                setError("");
                 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
                 const token = localStorage.getItem('token');
+
+                if (!token) {
+                    throw new Error('Authentication required');
+                }
 
                 const response = await fetch(`${API_URL}/api/utilisateurs/${id}`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Utilisateur non trouvé');
+                    const errorData = await response.json().catch(() => ({}));
+                    if (response.status === 401) throw new Error('Session expirée');
+                    if (response.status === 403) throw new Error('Droits administrateur requis');
+                    if (response.status === 404) throw new Error('Utilisateur non trouvé');
+                    throw new Error(errorData.error || `Erreur ${response.status}`);
                 }
 
                 const userData = await response.json();
@@ -58,7 +66,7 @@ export default function EditUser() {
                     adresse: userData.adresse || '',
                     fonction: userData.fonction || '',
                     typecompte: userData.typecompte || 'ROLE_PATIENT',
-                    password: '', // Ne pas pré-remplir le mot de passe
+                    password: '',
                     confirmPassword: '',
                     etat: userData.etat || 'actif',
                     specialite: userData.medecin?.specialite || ''
@@ -66,6 +74,7 @@ export default function EditUser() {
 
             } catch (err) {
                 setError(err.message);
+                console.error('Erreur fetch:', err);
             } finally {
                 setFetchLoading(false);
             }
@@ -87,8 +96,14 @@ export default function EditUser() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        setSuccess(false);
 
         // Validation des mots de passe si remplis
+        if (formData.password && formData.password.length < 6) {
+            setError("Le mot de passe doit contenir au moins 6 caractères");
+            return;
+        }
+
         if (formData.password && formData.password !== formData.confirmPassword) {
             setError("Les mots de passe ne correspondent pas");
             return;
@@ -104,6 +119,10 @@ export default function EditUser() {
         try {
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
             const token = localStorage.getItem('token');
+
+            if (!token) {
+                throw new Error('Authentication required');
+            }
 
             // Préparer les données pour l'API
             const userData = {
@@ -132,16 +151,34 @@ export default function EditUser() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de la modification');
+                const errorData = await response.json().catch(() => ({}));
+                let errorMessage = errorData.error || `Erreur ${response.status}`;
+                
+                if (response.status === 400) {
+                    errorMessage = errorData.error || 'Données invalides';
+                } else if (response.status === 401) {
+                    errorMessage = 'Session expirée';
+                    setTimeout(() => navigate('/login'), 2000);
+                } else if (response.status === 403) {
+                    errorMessage = 'Droits administrateur requis';
+                } else if (response.status === 404) {
+                    errorMessage = 'Utilisateur non trouvé';
+                } else if (response.status === 409) {
+                    errorMessage = 'Cet email est déjà utilisé';
+                }
+                
+                throw new Error(errorMessage);
             }
 
-            // Succès - redirection vers la liste
-            alert('Utilisateur modifié avec succès !');
-            navigate('/admin/users');
+            // Succès
+            setSuccess(true);
+            setTimeout(() => {
+                navigate('/admin/users');
+            }, 1500);
 
         } catch (err) {
             setError(err.message);
+            console.error('Erreur soumission:', err);
         } finally {
             setLoading(false);
         }
@@ -203,8 +240,15 @@ export default function EditUser() {
                 </div>
             )}
 
+            {success && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+                    ✅ Utilisateur modifié avec succès ! Redirection...
+                </div>
+            )}
+
             {/* Formulaire */}
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* [Le reste de votre formulaire reste IDENTIQUE - il est parfait] */}
                 {/* Informations de base */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Prénom */}
