@@ -9,23 +9,25 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
+    // Champs communs
+    prenom: '',
+    nom: '',
     email: '',
-    phone: '',
-    role: 'PATIENT',
+    telephone: '',
     password: '',
     confirmPassword: '',
+    sexe: '',
+    adresse: '',
+    
     // Champs patient
-    dateOfBirth: '',
-    gender: '',
-    bloodType: '',
-    allergies: '',
-    antecedents: '',
+    date_naissance: '',
+    commune: '',
+    personne_urgence: '',
+    langue_pref: 'fr',
+    
     // Champs médecin
-    specialty: '',
-    locality: '',
-    cabinetAddress: '',
+    specialite: '',
+    fonction: 'Médecin',
   })
 
   const onSubmit = async (e) => {
@@ -33,8 +35,15 @@ export default function Register() {
     setLoading(true)
     setError('')
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Les mots de passe ne correspondent pas')
+      setLoading(false)
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères')
       setLoading(false)
       return
     }
@@ -42,46 +51,66 @@ export default function Register() {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
 
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      // Déterminer l'endpoint en fonction du rôle
+      const isPatient = true // Pour l'instant, on permet seulement l'inscription patient
+      const endpoint = isPatient ? '/api/patients' : '/api/utilisateurs'
+
+      // Préparer les données selon le modèle
+      const requestData = isPatient ? {
+        // Modèle Patient
+        prenom: formData.prenom,
+        nom: formData.nom,
+        telephone: formData.telephone,
+        email: formData.email,
+        password: formData.password,
+        sexe: formData.sexe,
+        date_naissance: formData.date_naissance,
+        adresse: formData.adresse,
+        commune: formData.commune,
+        personne_urgence: formData.personne_urgence,
+        langue_pref: formData.langue_pref,
+        typecompte: 'ROLE_PATIENT'
+      } : {
+        // Modèle Utilisateur (médecin/admin/secrétaire)
+        prenomu: formData.prenom,
+        nomu: formData.nom,
+        telephoneu: formData.telephone,
+        emailu: formData.email,
+        password: formData.password,
+        sexe: formData.sexe,
+        adresse: formData.adresse,
+        fonction: formData.fonction,
+        etat: 'actif',
+        typecompte: 'ROLE_MEDECIN', // ou autre rôle
+        // Champs médecin
+        ...(formData.fonction === 'Médecin' && {
+          specialite: formData.specialite
+        })
+      }
+
+      console.log('📤 Données envoyées:', requestData)
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          firstname: formData.firstname,
-          lastname: formData.lastname,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          password: formData.password,
-          // Champs conditionnels
-          ...(formData.role === 'PATIENT' && {
-            dateOfBirth: formData.dateOfBirth,
-            gender: formData.gender,
-            bloodType: formData.bloodType,
-            allergies: formData.allergies,
-            antecedents: formData.antecedents,
-          }),
-          ...(formData.role === 'DOCTOR' && {
-            specialty: formData.specialty,
-            locality: formData.locality,
-            cabinetAddress: formData.cabinetAddress,
-            validationStatus: 'PENDING'
-          }),
-        })
+        body: JSON.stringify(requestData)
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de l\'inscription')
+        throw new Error(data.error || `Erreur lors de l'inscription (${response.status})`)
       }
 
       // Inscription réussie
+      console.log('✅ Inscription réussie:', data)
       alert('Inscription réussie ! Vous pouvez maintenant vous connecter.')
       nav('/login')
       
     } catch (err) {
+      console.error('❌ Erreur inscription:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -100,7 +129,13 @@ export default function Register() {
       <Navbar />
       <section className="section">
         <div className="max-w-2xl mx-auto card">
-          <h2 className="h2 text-center">Créer un compte</h2>
+          <h2 className="h2 text-center">Créer un compte Patient</h2>
+
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700 text-center">
+              📝 Inscription Patient - Les médecins doivent être créés par un administrateur
+            </p>
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -109,27 +144,13 @@ export default function Register() {
           )}
 
           <form onSubmit={onSubmit} className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Champs de base */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rôle *</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                required
-              >
-                <option value="PATIENT">Patient</option>
-                <option value="DOCTOR">Médecin</option>
-              </select>
-            </div>
-
+            {/* Informations personnelles */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
               <input
                 type="text"
-                name="firstname"
-                value={formData.firstname}
+                name="prenom"
+                value={formData.prenom}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
@@ -140,8 +161,8 @@ export default function Register() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
               <input
                 type="text"
-                name="lastname"
-                value={formData.lastname}
+                name="nom"
+                value={formData.nom}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
@@ -164,14 +185,87 @@ export default function Register() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
               <input
                 type="tel"
-                name="phone"
-                value={formData.phone}
+                name="telephone"
+                value={formData.telephone}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
+              <select
+                name="sexe"
+                value={formData.sexe}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">Sélectionner</option>
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+              <input
+                type="date"
+                name="date_naissance"
+                value={formData.date_naissance}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+              <input
+                type="text"
+                name="adresse"
+                value={formData.adresse}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Commune</label>
+              <input
+                type="text"
+                name="commune"
+                value={formData.commune}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Personne à contacter en urgence</label>
+              <input
+                type="text"
+                name="personne_urgence"
+                value={formData.personne_urgence}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Langue préférée</label>
+              <select
+                name="langue_pref"
+                value={formData.langue_pref}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+              </select>
+            </div>
+
+            {/* Mot de passe */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
               <input
@@ -181,6 +275,7 @@ export default function Register() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
+                minLength="6"
               />
             </div>
 
@@ -196,117 +291,18 @@ export default function Register() {
               />
             </div>
 
-            {/* Champs spécifiques au patient */}
-            {formData.role === 'PATIENT' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="">Sélectionner</option>
-                    <option value="M">Masculin</option>
-                    <option value="F">Féminin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Groupe sanguin</label>
-                  <input
-                    type="text"
-                    name="bloodType"
-                    value={formData.bloodType}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
-                  <textarea
-                    name="allergies"
-                    value={formData.allergies}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Antécédents médicaux</label>
-                  <textarea
-                    name="antecedents"
-                    value={formData.antecedents}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Champs spécifiques au médecin */}
-            {formData.role === 'DOCTOR' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Spécialité *</label>
-                  <input
-                    type="text"
-                    name="specialty"
-                    value={formData.specialty}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Localité *</label>
-                  <input
-                    type="text"
-                    name="locality"
-                    value={formData.locality}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    required
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Adresse du cabinet *</label>
-                  <textarea
-                    name="cabinetAddress"
-                    value={formData.cabinetAddress}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
             <div className="md:col-span-2">
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? 'Inscription en cours...' : 'Créer mon compte'}
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Inscription en cours...
+                  </>
+                ) : 'Créer mon compte Patient'}
               </button>
             </div>
           </form>
@@ -315,11 +311,17 @@ export default function Register() {
             <p className="text-sm text-gray-600 text-center">
               Déjà un compte ?{' '}
               <Link 
-                className="text-green-700 hover:text-blue-700 font-medium" 
+                className="text-green-700 hover:text-green-800 font-medium" 
                 to="/login"
               >
                 Se connecter
               </Link>
+            </p>
+          </div>
+
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-xs text-gray-600 text-center">
+              💡 Pour devenir médecin sur la plateforme, veuillez contacter l'administration.
             </p>
           </div>
         </div>

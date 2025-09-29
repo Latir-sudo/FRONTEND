@@ -12,6 +12,7 @@ import PatientPreinscriptions from './pages/patient/Preinscriptions'
 import PatientReminders from './pages/patient/Reminders'
 import DoctorProfile from './pages/DoctorProfile'
 import RequireAuth from './components/RequireAuth'
+import ProtectedRoute from './context/ProtectedRoute'
 
 
 // importation pour admin
@@ -34,15 +35,14 @@ export default function App() {
       <Route path="/medecins/:id" element={<DoctorProfile />} />
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
-
-      <Route
-        path="/patient"
-        element={
-          <RequireAuth>
-            <PatientLayout />
-          </RequireAuth>
-        }
-      >
+<Route 
+  path="/patient/*" 
+  element={
+    <ProtectedRoute requiredRole="ROLE_PATIENT">
+      <PatientLayout />
+    </ProtectedRoute>
+  } 
+>
         <Route index element={<PatientStats />} />
         <Route path="rendez-vous" element={<PatientAppointments />} />
         <Route path="teleconsultations" element={<PatientTeleconsult />} />
@@ -88,6 +88,8 @@ export default function App() {
        
        
       </Route>
+
+   
 
       <Route path="*" element={<Home />} />
 

@@ -1,5 +1,6 @@
 // context/AuthContext.jsx
 import { createContext, useState, useContext, useEffect } from 'react'
+import authService from '../services/authService'
 
 const AuthContext = createContext()
 
@@ -7,17 +8,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Charger l'utilisateur au démarrage
   useEffect(() => {
     const savedUser = localStorage.getItem('user')
-    if (savedUser) {
+    const token = localStorage.getItem('token')
+    
+    if (savedUser && token) {
       try {
         const userData = JSON.parse(savedUser)
         setUser(userData)
-        
-        if (userData.token) {
-          localStorage.setItem('token', userData.token)
-        }
       } catch (error) {
         console.error('Error parsing saved user:', error)
         localStorage.removeItem('user')
@@ -27,35 +25,65 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  // 🔑 FONCTION LOGIN - Adaptée à votre API
-  const login = (apiResponse) => {
-    console.log('Login called with API response:', apiResponse)
+  // 🔑 FONCTION LOGIN UNIFIÉE
+  const login = async (credentials) => {
+    console.log('🔐 Début du processus de login unifié')
     
-    if (!apiResponse || !apiResponse.user || !apiResponse.token) {
-      console.error('Invalid API response for login')
-      return
-    }
+    try {
+      const apiResponse = await authService.unifiedLogin(credentials)
+      console.log('✅ Réponse API reçue:', apiResponse)
 
-    const userData = apiResponse.user
-    const userInfo = {
-      id: userData.id,
-      email: userData.email,
-      role: userData.role, // 'PATIENT', 'DOCTOR', 'ADMIN'
-      firstname: userData.firstname,
-      lastname: userData.lastname,
-      phone: userData.phone,
-      token: apiResponse.token,
-      // Pour les médecins, on devra récupérer le validationStatus séparément
-    }
+      if (!apiResponse || !apiResponse.utilisateur || !apiResponse.token) {
+        throw new Error('Format de réponse API invalide')
+      }
 
-    setUser(userInfo)
-    localStorage.setItem('user', JSON.stringify(userInfo))
-    localStorage.setItem('token', apiResponse.token)
+      const utilisateur = apiResponse.utilisateur
+      
+      // DEBUG: Vérifier le token
+      try {
+        const decodedToken = JSON.parse(atob(apiResponse.token.split('.')[1]))
+        console.log('🔐 Token décodé:', decodedToken)
+      } catch (e) {
+        console.log('⚠️ Impossible de décoder le token:', e)
+      }
+
+      // Transformation pour le frontend - TOUJOURS utiliser typecompte
+      const userInfo = {
+        // Champs transformés
+        id: utilisateur.idu,
+        email: utilisateur.emailu,  
+        role: utilisateur.typecompte, // ← IMPORTANT: vient de typecompte
+        firstname: utilisateur.prenomu,
+        lastname: utilisateur.nomu,
+        phone: utilisateur.telephoneu,
+        fonction: utilisateur.fonction,
+        adresse: utilisateur.adresse,
+        sexe: utilisateur.sexe,
+        etat: utilisateur.etat,
+        dateajout: utilisateur.dateajout,
+        
+        // Données médecin si disponibles
+        medecin: utilisateur.medecin,
+        
+        // Token
+        token: apiResponse.token,
+      }
+
+      console.log('👤 Utilisateur après transformation:', userInfo)
+      
+      setUser(userInfo)
+      localStorage.setItem('user', JSON.stringify(userInfo))
+      localStorage.setItem('token', apiResponse.token)
+
+      return userInfo
+    } catch (error) {
+      console.error('❌ Erreur lors du login:', error)
+      throw error
+    }
   }
 
   // 🚪 FONCTION LOGOUT
   const logout = () => {
-    console.log('Logout called')
     setUser(null)
     localStorage.removeItem('user')
     localStorage.removeItem('token')
@@ -63,17 +91,12 @@ export function AuthProvider({ children }) {
 
   // 🔍 FONCTIONS UTILITAIRES
   const hasRole = (role) => user?.role === role
-  
-  const isAuthenticated = !!user
-  
+  const isAuthenticated = () => !!user && !!user.token
   const getToken = () => localStorage.getItem('token')
-
-  // Pour les médecins, on devra vérifier le statut via une API séparée
-  const isApprovedDoctor = () => {
-    // Cette fonction devra probablement faire un appel API
-    // pour vérifier le validationStatus du médecin
-    return user?.role === 'DOCTOR'
-  }
+  const isAdmin = () => user?.role === 'ROLE_ADMIN'
+  const isMedecin = () => user?.role === 'ROLE_MEDECIN'
+  const isSecretaire = () => user?.role === 'ROLE_SECRETAIRE'
+  const isPatient = () => user?.role === 'ROLE_PATIENT'
 
   const value = {
     user,
@@ -83,7 +106,10 @@ export function AuthProvider({ children }) {
     hasRole,
     isAuthenticated,
     getToken,
-    isApprovedDoctor
+    isAdmin,
+    isMedecin,
+    isSecretaire,
+    isPatient
   }
 
   return (

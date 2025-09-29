@@ -1,96 +1,55 @@
 // components/ProtectedRoute.jsx
 import { useAuth } from '../context/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
 
 export default function ProtectedRoute({ 
   children, 
-  allowedRoles = [],
-  requireDoctorValidation = false 
+  requiredRole,
+  requiredRoles = [] 
 }) {
-  const { user, loading } = useAuth()
-  const [doctorStatus, setDoctorStatus] = useState(null)
-  const [checkingDoctor, setCheckingDoctor] = useState(false)
+  const { isAuthenticated, user, loading } = useAuth()
   const location = useLocation()
 
-  // Vérifier le statut du médecin si nécessaire
-  useEffect(() => {
-    const checkDoctorStatus = async () => {
-      if (requireDoctorValidation && user?.role === 'DOCTOR') {
-        setCheckingDoctor(true)
-        try {
-          // 🔍 API pour vérifier le statut du médecin
-          const status = await checkDoctorValidationStatus(user.id)
-          setDoctorStatus(status)
-        } catch (error) {
-          console.error('Error checking doctor status:', error)
-          setDoctorStatus('UNKNOWN')
-        } finally {
-          setCheckingDoctor(false)
-        }
-      }
-    }
-
-    checkDoctorStatus()
-  }, [user, requireDoctorValidation])
-
-  // ⏳ Affichage pendant le chargement
-  if (loading || (requireDoctorValidation && checkingDoctor)) {
+  // ⏳ En cours de chargement
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Vérification des permissions...</p>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+          <p className="text-gray-600">Vérification de l'authentification...</p>
         </div>
       </div>
     )
   }
 
-  // 🔐 Vérification d'authentification
-  if (!user) {
+  // 🔐 Non authentifié - redirection vers login
+  if (!isAuthenticated()) {
+    console.log('❌ Non authentifié, redirection vers /login')
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // 👥 Vérification des rôles autorisés
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />
-  }
-
-  // 🩺 Vérification spécifique pour les médecins
-  if (requireDoctorValidation && user.role === 'DOCTOR') {
-    if (doctorStatus === 'PENDING' || doctorStatus === 'UNKNOWN') {
-      return <Navigate to="/doctor-pending" replace />
-    }
-    if (doctorStatus === 'REJECTED') {
-      return <Navigate to="/doctor-rejected" replace />
-    }
-  }
-
-  // ✅ Tout est bon, afficher le contenu
-  return children
-}
-
-// Fonction pour vérifier le statut du médecin
-const checkDoctorValidationStatus = async (userId) => {
-  try {
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
-    const token = localStorage.getItem('token')
+  // 🎯 Vérification des rôles si requis
+  if (requiredRole || requiredRoles.length > 0) {
+    const rolesToCheck = requiredRole ? [requiredRole] : requiredRoles
+    const hasRequiredRole = rolesToCheck.some(role => user?.role === role)
     
-    const response = await fetch(`${API_URL}/api/doctors/status/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    if (!hasRequiredRole) {
+      console.log(`❌ Rôle insuffisant. Requis: ${rolesToCheck.join(', ')}, Actuel: ${user?.role}`)
+      
+      // Redirection selon le rôle actuel
+      const roleDestinations = {
+        'ROLE_ADMIN': '/admin',
+        'ROLE_MEDECIN': '/medecin/dashboard',
+        'ROLE_SECRETAIRE': '/secretaire/dashboard', 
+        'ROLE_PATIENT': '/patient/dashboard'
       }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      return data.validationStatus // 'APPROVED', 'PENDING', 'REJECTED'
+      
+      const dest = roleDestinations[user?.role] || '/unauthorized'
+      return <Navigate to={dest} replace />
     }
-    
-    return 'UNKNOWN'
-  } catch (error) {
-    console.error('Error fetching doctor status:', error)
-    return 'UNKNOWN'
   }
+
+  // ✅ Accès autorisé
+  console.log(`✅ Accès autorisé pour ${user?.role}`)
+  return children
 }

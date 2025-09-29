@@ -1,15 +1,13 @@
 // pages/Login.jsx
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
 
 export default function Login() {
   const { login } = useAuth()
   const nav = useNavigate()
-  const loc = useLocation()
-  const from = loc.state?.from?.pathname || null
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,63 +20,30 @@ export default function Login() {
     setError('')
 
     try {
-      // 🔐 APPEL À VOTRE API - Format exact de votre backend
-      const apiResponse = await authenticateUser(email, password)
+      console.log('🚀 Début de la connexion unifiée...')
       
-      // Utiliser la réponse complète de l'API
-      login(apiResponse)
+      // Utilisation du login unifié
+      const userData = await login({ email, password })
       
-      // Redirection selon le rôle
+      console.log('✅ Login réussi, redirection...', userData)
+
+      // Redirection selon le rôle (qui vient de typecompte)
       const destinations = {
-        'ADMIN': '/admin',
-        'DOCTOR': '/medecin', 
-        'PATIENT': '/patient'
+        'ROLE_ADMIN': '/admin',
+        'ROLE_MEDECIN': '/medecin/dashboard', 
+        'ROLE_SECRETAIRE': '/secretaire/dashboard',
+        'ROLE_PATIENT': '/patient/dashboard'
       }
       
-      const dest = from || destinations[apiResponse.user.role] || '/'
+      const dest = destinations[userData.role] || '/'
+      console.log(`📍 Redirection vers: ${dest} (rôle: ${userData.role})`)
       nav(dest, { replace: true })
       
     } catch (err) {
+      console.error('❌ Erreur de connexion:', err)
       setError(err.message || 'Erreur de connexion')
     } finally {
       setLoading(false)
-    }
-  }
-
-  // 🔐 FONCTION D'AUTHENTIFICATION - Adaptée à votre API
-  const authenticateUser = async (email, password) => {
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
-
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.trim().toLowerCase(),
-        password: password
-      })
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      // Gestion des erreurs basée sur votre API
-      switch (response.status) {
-        case 400:
-          throw new Error(data.message || 'Email ou mot de passe incorrect')
-        case 500:
-          throw new Error('Erreur serveur, veuillez réessayer')
-        default:
-          throw new Error(data.message || `Erreur ${response.status}`)
-      }
-    }
-
-    // Vérification du format de réponse
-    if (data.message === "Login successful" && data.user && data.token) {
-      return data // Retourner toute la réponse API
-    } else {
-      throw new Error('Réponse invalide du serveur')
     }
   }
 
@@ -89,12 +54,11 @@ export default function Login() {
         <div className="max-w-md mx-auto card">
           <h2 className="h2 text-center">Connexion</h2>
 
+         
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-exclamation-circle"></i>
-                <span>{error}</span>
-              </div>
+              {error}
             </div>
           )}
 
@@ -108,7 +72,7 @@ export default function Login() {
                 onChange={e => setEmail(e.target.value)}
                 type="email"
                 placeholder="votre@email.com"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
                 disabled={loading}
               />
@@ -123,7 +87,7 @@ export default function Login() {
                 onChange={e => setPassword(e.target.value)}
                 type="password"
                 placeholder="Votre mot de passe"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-200 transition-colors"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 required
                 disabled={loading}
               />
@@ -132,19 +96,14 @@ export default function Login() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Connexion en cours...
+                  Connexion...
                 </>
-              ) : (
-                <>
-                  <i className="fas fa-sign-in-alt"></i>
-                  Se connecter
-                </>
-              )}
+              ) : 'Se connecter'}
             </button>
           </form>
 
@@ -152,8 +111,8 @@ export default function Login() {
             <p className="text-sm text-gray-600 text-center">
               Pas de compte ?{' '}
               <Link 
-                className="text-green-700 hover:text-blue-700 font-medium" 
-                to="/inscription"
+                className="text-blue-600 hover:text-blue-700 font-medium" 
+                to="/register"
               >
                 Créer un compte
               </Link>
