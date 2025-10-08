@@ -1,190 +1,236 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function Register() {
-  const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
-    nom: "",
-    prenom: "",
+    firstname: "",
+    lastname: "",
     email: "",
-    motdepasse: "",
-    telephone: "",
-    adresse: "",
-    typecompte: "",
-    dateNaissance: "",
-    specialite: ""
+    phone: "",
+    password: "",
+    adress: "",
+    role: "PATIENT", // valeur par défaut
+    // Champs spécifiques
+    dateOfBirth: "",
+    gender: "",
+    bloodType: "",
+    allergies: "",
+    antecedents: "",
+    specialty: "",
+    locality: "",
+    cabinetAddress: "",
   });
 
-  const [error, setError] = useState("");
-
-  // Gestion des champs
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Soumission du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      // Préparer les données à envoyer
       let payload = {
-        emailu: formData.email,
-        mdpu: formData.motdepasse,
-        telephone: formData.telephone,
-        adresse: formData.adresse,
-        typecompte: formData.typecompte,
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        adress: formData.adress,
+        role: formData.role.toUpperCase(),
       };
 
-      // Adapter selon le rôle
-      if (formData.typecompte === "ROLE_PATIENT") {
+      if (formData.role === "PATIENT") {
         payload = {
           ...payload,
-          nomp: formData.nom,
-          prenomp: formData.prenom,
-          datenaissance: formData.dateNaissance,
-        };
-      } else if (formData.typecompte === "ROLE_MEDECIN") {
-        payload = {
-          ...payload,
-          nomu: formData.nom,
-          prenomu: formData.prenom,
-          specialite: formData.specialite,
-        };
-      } else {
-        // Admin / Secretaire
-        payload = {
-          ...payload,
-          nomu: formData.nom,
-          prenomu: formData.prenom,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          bloodType: formData.bloodType,
+          allergies: formData.allergies,
+          antecedents: formData.antecedents,
         };
       }
 
-      await axios.post("http://localhost:8081/api/auth/register", payload);
-      navigate("/login");
-    } catch (err) {
-      console.error(err);
-      setError("Erreur lors de l'inscription. Vérifiez vos informations.");
+      if (formData.role === "DOCTOR") {
+        payload = {
+          ...payload,
+          specialty: formData.specialty,
+          locality: formData.locality,
+          cabinetAddress: formData.cabinetAddress,
+        };
+      }
+
+      // Envoi au backend
+      const res = await axios.post("http://localhost:5000/api/auth/register", payload);
+      alert("Inscription réussie !");
+      console.log(res.data);
+
+    } catch (error) {
+      console.error(error);
+      alert("Erreur lors de l'inscription");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-lg bg-white">
-      <h2 className="text-2xl font-bold mb-4 text-center">Inscription</h2>
-
-      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-
+    <div className="max-w-lg mx-auto p-6 shadow-lg rounded-lg bg-white">
+      <h2 className="text-2xl font-bold mb-4">Créer un compte</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* Nom */}
+        
+        {/* Champs communs */}
         <input
           type="text"
-          name="nom"
-          placeholder="Nom"
-          value={formData.nom}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-
-        {/* Prénom */}
-        <input
-          type="text"
-          name="prenom"
+          name="firstname"
           placeholder="Prénom"
-          value={formData.prenom}
+          value={formData.firstname}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
+          className="w-full border p-2 rounded"
           required
         />
-
-        {/* Email */}
+        <input
+          type="text"
+          name="lastname"
+          placeholder="Nom"
+          value={formData.lastname}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          required
+        />
         <input
           type="email"
           name="email"
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
+          className="w-full border p-2 rounded"
           required
         />
-
-        {/* Mot de passe */}
+        <input
+          type="text"
+          name="phone"
+          placeholder="Téléphone"
+          value={formData.phone}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          required
+        />
         <input
           type="password"
-          name="motdepasse"
+          name="password"
           placeholder="Mot de passe"
-          value={formData.motdepasse}
+          value={formData.password}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
+          className="w-full border p-2 rounded"
+          required
+        />
+        <input
+          type="text"
+          name="adress"
+          placeholder="Adresse"
+          value={formData.adress}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
           required
         />
 
-        {/* Téléphone */}
-        <input
-          type="text"
-          name="telephone"
-          placeholder="Téléphone"
-          value={formData.telephone}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        {/* Adresse */}
-        <input
-          type="text"
-          name="adresse"
-          placeholder="Adresse"
-          value={formData.adresse}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        {/* Type de compte */}
+        {/* Sélection du rôle */}
         <select
-          name="typecompte"
-          value={formData.typecompte}
+          name="role"
+          value={formData.role}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
+          className="w-full border p-2 rounded"
           required
         >
-          <option value="">-- Sélectionnez un type de compte --</option>
-          <option value="ROLE_PATIENT">Patient</option>
-          <option value="ROLE_MEDECIN">Médecin</option>
-          <option value="ROLE_SECRETAIRE">Secrétaire</option>
-          <option value="ROLE_ADMIN">Admin</option>
+          <option value="PATIENT">Patient</option>
+          <option value="DOCTOR">Docteur</option>
         </select>
 
-        {/* Champs spécifiques */}
-        {formData.typecompte === "ROLE_PATIENT" && (
-          <input
-            type="date"
-            name="dateNaissance"
-            value={formData.dateNaissance}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
+        {/* Champs spécifiques Patient */}
+        {formData.role === "PATIENT" && (
+          <>
+            <input
+              type="date"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            />
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            >
+              <option value="">-- Sexe --</option>
+              <option value="MALE">Homme</option>
+              <option value="FEMALE">Femme</option>
+            </select>
+            <input
+              type="text"
+              name="bloodType"
+              placeholder="Groupe sanguin (ex: O+)"
+              value={formData.bloodType}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="text"
+              name="allergies"
+              placeholder="Allergies"
+              value={formData.allergies}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="text"
+              name="antecedents"
+              placeholder="Antécédents médicaux"
+              value={formData.antecedents}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+          </>
         )}
 
-        {formData.typecompte === "ROLE_MEDECIN" && (
-          <input
-            type="text"
-            name="specialite"
-            placeholder="Spécialité"
-            value={formData.specialite}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
+        {/* Champs spécifiques Docteur */}
+        {formData.role === "DOCTOR" && (
+          <>
+            <input
+              type="text"
+              name="specialty"
+              placeholder="Spécialité"
+              value={formData.specialty}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            />
+            <input
+              type="text"
+              name="locality"
+              placeholder="Localité"
+              value={formData.locality}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            />
+            <input
+              type="text"
+              name="cabinetAddress"
+              placeholder="Adresse du cabinet"
+              value={formData.cabinetAddress}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            />
+          </>
         )}
 
         <button
           type="submit"
           className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
         >
-          S'inscrire
+          S’inscrire
         </button>
       </form>
     </div>
