@@ -8,16 +8,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // 🔄 Charger la session depuis localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('user')
     const token = localStorage.getItem('token')
-    
+
     if (savedUser && token) {
       try {
         const userData = JSON.parse(savedUser)
         setUser(userData)
       } catch (error) {
-        console.error('Error parsing saved user:', error)
+        console.error('⚠️ Erreur parsing localStorage:', error)
         localStorage.removeItem('user')
         localStorage.removeItem('token')
       }
@@ -25,34 +26,31 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  // 🔑 FONCTION LOGIN UNIFIÉE
+  // 🔑 LOGIN UNIFIÉ
   const login = async (credentials) => {
-    console.log('🔐 Début du processus de login unifié')
-    
     try {
       const apiResponse = await authService.unifiedLogin(credentials)
-      console.log('✅ Réponse API reçue:', apiResponse)
+      console.log('✅ Réponse API:', apiResponse)
 
-      if (!apiResponse || !apiResponse.utilisateur || !apiResponse.token) {
-        throw new Error('Format de réponse API invalide')
+      if (!apiResponse?.utilisateur || !apiResponse?.token) {
+        throw new Error('Réponse API invalide')
       }
 
       const utilisateur = apiResponse.utilisateur
-      
-      // DEBUG: Vérifier le token
-      try {
-        const decodedToken = JSON.parse(atob(apiResponse.token.split('.')[1]))
-        console.log('🔐 Token décodé:', decodedToken)
-      } catch (e) {
-        console.log('⚠️ Impossible de décoder le token:', e)
+
+      // 🛡️ Normalisation du rôle
+      let role = utilisateur.typecompte
+      if (role) {
+        role = role.toUpperCase().startsWith('ROLE_')
+          ? role.toUpperCase()
+          : `ROLE_${role.toUpperCase()}`
       }
 
-      // Transformation pour le frontend - TOUJOURS utiliser typecompte
+      // Transformation pour le frontend
       const userInfo = {
-        // Champs transformés
         id: utilisateur.idu,
-        email: utilisateur.emailu,  
-        role: utilisateur.typecompte, // ← IMPORTANT: vient de typecompte
+        email: utilisateur.emailu,
+        role, // ← rôle toujours au format ROLE_*
         firstname: utilisateur.prenomu,
         lastname: utilisateur.nomu,
         phone: utilisateur.telephoneu,
@@ -61,42 +59,41 @@ export function AuthProvider({ children }) {
         sexe: utilisateur.sexe,
         etat: utilisateur.etat,
         dateajout: utilisateur.dateajout,
-        
-        // Données médecin si disponibles
-        medecin: utilisateur.medecin,
-        
-        // Token
+        medecin: utilisateur.medecin, // si dispo
         token: apiResponse.token,
       }
 
-      console.log('👤 Utilisateur après transformation:', userInfo)
-      
+      console.log('👤 Utilisateur stocké:', userInfo)
+
+      // Sauvegarde session
       setUser(userInfo)
       localStorage.setItem('user', JSON.stringify(userInfo))
       localStorage.setItem('token', apiResponse.token)
 
       return userInfo
     } catch (error) {
-      console.error('❌ Erreur lors du login:', error)
+      console.error('❌ Erreur login:', error)
       throw error
     }
   }
 
-  // 🚪 FONCTION LOGOUT
+  // 🚪 LOGOUT
   const logout = () => {
     setUser(null)
     localStorage.removeItem('user')
     localStorage.removeItem('token')
   }
 
-  // 🔍 FONCTIONS UTILITAIRES
+  // 🔍 Helpers
   const hasRole = (role) => user?.role === role
-  const isAuthenticated = () => !!user && !!user.token
+  const isAuthenticated = () => !!user?.token
   const getToken = () => localStorage.getItem('token')
-  const isAdmin = () => user?.role === 'ROLE_ADMIN'
-  const isMedecin = () => user?.role === 'ROLE_MEDECIN'
-  const isSecretaire = () => user?.role === 'ROLE_SECRETAIRE'
-  const isPatient = () => user?.role === 'ROLE_PATIENT'
+
+  // Raccourcis par rôle
+  const isAdmin = () => hasRole('ROLE_ADMIN')
+  const isMedecin = () => hasRole('ROLE_MEDECIN')
+  const isSecretaire = () => hasRole('ROLE_SECRETAIRE')
+  const isPatient = () => hasRole('ROLE_PATIENT')
 
   const value = {
     user,
@@ -109,7 +106,7 @@ export function AuthProvider({ children }) {
     isAdmin,
     isMedecin,
     isSecretaire,
-    isPatient
+    isPatient,
   }
 
   return (
